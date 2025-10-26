@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Browser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        background: #f5f5f5;
+      }
+
+      #app-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      #toolbar {
+        height: 60px;
+        background: #1f2937;
+        border-bottom: 1px solid #374151;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 8px;
+        z-index: 1000;
+      }
+
+      #content-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      #browser-placeholder {
+        flex: 1;
+        background: white;
+        position: relative;
+      }
+
+      #sidebar {
+        width: 450px;
+        background: #ffffff;
+        border-left: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      #chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        scroll-behavior: smooth;
+        background: #f9fafb;
+      }
+
+      #chat-messages::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      #chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      #chat-messages::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+
+      #chat-messages::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      .message {
+        display: flex;
+        flex-direction: column;
+        max-width: 75%;
+        animation: messageSlide 0.3s ease-out;
+        position: relative;
+      }
+
+      @keyframes messageSlide {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message-content {
+        padding: 12px 16px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        word-break: break-word;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        font-size: 14px;
+      }
+
+      .message-time {
+        font-size: 11px;
+        margin-top: 4px;
+        padding: 0 8px;
+        opacity: 0.6;
+      }
+
+      .message.user {
+        align-self: flex-end;
+        align-items: flex-end;
+      }
+
+      .message.user .message-content {
+        background: #2563eb;
+        color: white;
+        border-bottom-right-radius: 4px;
+      }
+
+      .message.assistant {
+        align-self: flex-start;
+        align-items: flex-start;
+      }
+
+      .message.assistant .message-content {
+        background: white;
+        color: #1f2937;
+        border: 1px solid #e5e7eb;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+
+      .message.system {
+        align-self: center;
+        align-items: center;
+        max-width: 90%;
+      }
+
+      .message.system .message-content {
+        background: rgba(251, 191, 36, 0.1);
+        color: #92400e;
+        font-size: 13px;
+        text-align: center;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        border-radius: 12px;
+        padding: 8px 16px;
+      }
+
+      #chat-input-container {
+        padding: 16px 20px;
+        border-top: 1px solid #e5e7eb;
+        background: #f9fafb;
+        flex-shrink: 0;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .btn-primary {
+        background: #3b82f6;
+        color: white;
+      }
+
+      .btn-secondary {
+        background: #6b7280;
+        color: white;
+      }
+
+      .btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .btn-icon {
+        padding: 8px;
+        background: #374151;
+        color: #d1d5db;
+      }
+
+      .btn-icon:hover {
+        background: #4b5563;
+        color: white;
+      }
+
+      #url-input {
+        flex: 1;
+        padding: 8px 16px;
+        border: 1px solid #4b5563;
+        border-radius: 6px;
+        background: #374151;
+        color: white;
+        font-size: 14px;
+      }
+
+      #url-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        background: #4b5563;
+      }
+
+      #chat-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        resize: none;
+        font-size: 14px;
+        font-family: inherit;
+        background: white;
+        transition: all 0.2s;
+      }
+
+      #chat-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .loading-spinner {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3b82f6;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .tab-button {
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .tab-button.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+      }
+
+      .tab-content {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      #chat-tab {
+        background: #f9fafb;
+      }
+
+      #settings-panel,
+      #tools-panel {
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      .setting-group {
+        margin-bottom: 16px;
+      }
+
+      .setting-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+      }
+
+      .setting-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      .setting-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+
+      .code-block {
+        background: #1f2937;
+        color: #f9fafb;
+        padding: 12px;
+        border-radius: 6px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        overflow-x: auto;
+        margin: 8px 0;
+      }
+
+      .context-badge {
+        display: inline-block;
+        background: rgba(59, 130, 246, 0.15);
+        color: #1e40af;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+      }
+
+      .message.user .context-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      #interrupt-button {
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        display: none;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      #interrupt-button.visible {
+        display: flex;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 24px;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 24px;
+      }
+
+      .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .toggle-slider {
+        background-color: #3b82f6;
+      }
+
+      input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+      }
+
+      /* Dark Mode Styles */
+      body.dark-mode #sidebar {
+        background: #1e1e1e;
+        border-left-color: #333;
+      }
+
+      body.dark-mode #chat-tab {
+        background: #1e1e1e;
+      }
+
+      body.dark-mode #chat-messages {
+        background: #252525;
+      }
+
+      body.dark-mode .message.assistant .message-content {
+        background: #2d2d2d;
+        color: #e0e0e0;
+        border-color: #444;
+      }
+
+      body.dark-mode .message.system .message-content {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+        border-color: rgba(251, 191, 36, 0.4);
+      }
+
+      body.dark-mode #chat-input-container {
+        background: #252525;
+        border-top-color: #333;
+      }
+
+      body.dark-mode #chat-input {
+        background: #2d2d2d;
+        color: #e0e0e0;
+        border-color: #444;
+      }
+
+      body.dark-mode #settings-panel,
+      body.dark-mode #tools-panel {
+        background: #1e1e1e;
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .setting-label {
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .setting-input {
+        background: #2d2d2d;
+        color: #e0e0e0;
+        border-color: #444;
+      }
+
+      body.dark-mode .code-block {
+        background: #0d1117;
+      }
+
+      body.dark-mode .tab-button {
+        color: #888;
+      }
+
+      body.dark-mode .tab-button.active {
+        color: #3b82f6;
+      }
+
+      .theme-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
+        color: #e0e0e0;
+        cursor: pointer;
+        font-size: 20px;
+      }
+
+      .theme-toggle:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+      }
+
+      body.dark-mode #bookmarks-panel {
+        background: #1e1e1e;
+        color: #e0e0e0;
+      }
+
+      body.dark-mode .bookmark-item {
+        background: #2d2d2d !important;
+        border-color: #444 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app-container">
+      <!-- Navigation Toolbar -->
+      <div id="toolbar">
+        <button class="btn btn-icon" id="back-btn" title="Back">←</button>
+        <button class="btn btn-icon" id="forward-btn" title="Forward">→</button>
+        <button class="btn btn-icon" id="reload-btn" title="Reload">↻</button>
+        <input
+          type="text"
+          id="url-input"
+          placeholder="Enter URL or search..."
+        />
+        <button
+          class="btn btn-secondary"
+          id="summarize-btn"
+          title="Summarize Page"
+        >
+          📄 Summarize
+        </button>
+        <button
+          class="btn btn-secondary"
+          id="context-extract-btn"
+          title="Extract Context"
+        >
+          🔍 Extract
+        </button>
+        <button
+          class="btn btn-secondary"
+          id="bookmark-btn"
+          title="Bookmark Current Page"
+        >
+          ⭐ Bookmark
+        </button>
+        <div style="flex: 1"></div>
+        <!-- Global Interrupt Button (in toolbar) -->
+        <button id="interrupt-button" class="btn btn-danger">
+          ⛔ INTERRUPT
+        </button>
+        <label class="flex items-center gap-2 text-white text-sm">
+          <span>Agent Mode</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="agent-mode-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </label>
+        <label
+          class="flex items-center gap-2 text-white text-sm"
+          id="auto-approve-container"
+          style="display: none"
+        >
+          <span title="Let AI execute actions without asking for confirmation"
+            >Auto-Approve</span
+          >
+          <label class="toggle-switch">
+            <input type="checkbox" id="auto-approve-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </label>
+      </div>
+
+      <!-- Main Content Area -->
+      <div id="content-container">
+        <!-- Browser View (Electron BrowserView renders here) -->
+        <div id="browser-placeholder">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100%;
+              color: #6b7280;
+            "
+          >
+            <div style="text-align: center">
+              <h2 style="font-size: 24px; margin-bottom: 8px">AI Browser</h2>
+              <p>Enter a URL to start browsing</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Panel -->
+        <div id="sidebar">
+          <!-- Sidebar Tabs -->
+          <div
+            style="
+              display: flex;
+              border-bottom: 1px solid #e5e7eb;
+              background: #f9fafb;
+            "
+            id="sidebar-tabs"
+          >
+            <button class="tab-button active" data-tab="chat">💬 Chat</button>
+            <button class="tab-button" data-tab="settings">⚙️ Settings</button>
+            <button class="tab-button" data-tab="tools">🛠️ Tools</button>
+            <button class="tab-button" data-tab="bookmarks">
+              ⭐ Bookmarks
+            </button>
+            <div style="flex: 1"></div>
+            <button
+              class="theme-toggle"
+              id="theme-toggle"
+              title="Toggle Dark Mode"
+            >
+              🌙
+            </button>
+          </div>
+
+          <!-- Chat Tab -->
+          <div id="chat-tab" class="tab-content">
+            <div id="chat-messages"></div>
+            <div id="chat-input-container">
+              <div style="display: flex; gap: 8px; margin-bottom: 8px">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
+                    color: #6b7280;
+                  "
+                >
+                  <input type="checkbox" id="use-context-checkbox" checked />
+                  Use page context
+                </label>
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 13px;
+                    color: #6b7280;
+                  "
+                >
+                  <input type="checkbox" id="use-selection-checkbox" />
+                  Use selected text
+                </label>
+              </div>
+              <textarea
+                id="chat-input"
+                rows="3"
+                placeholder="Ask AI about this page or anything else..."
+              ></textarea>
+              <div style="display: flex; gap: 8px; margin-top: 8px">
+                <button class="btn btn-primary" id="send-btn" style="flex: 1">
+                  Send
+                </button>
+                <button class="btn btn-secondary" id="clear-chat-btn">
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Tab -->
+          <div id="settings-tab" class="tab-content" style="display: none">
+            <div id="settings-panel">
+              <h3
+                style="font-size: 16px; font-weight: 600; margin-bottom: 16px"
+              >
+                AI Provider Settings
+              </h3>
+
+              <div class="setting-group">
+                <label class="setting-label">AI Provider</label>
+                <select class="setting-input" id="ai-provider">
+                  <option value="lmstudio">LM Studio (Local)</option>
+                  <option value="anthropic">Anthropic (Claude)</option>
+                </select>
+              </div>
+
+              <!-- LM Studio Settings -->
+              <div id="lmstudio-settings">
+                <div class="setting-group">
+                  <label class="setting-label">API Endpoint</label>
+                  <input
+                    type="text"
+                    class="setting-input"
+                    id="api-endpoint"
+                    value="http://localhost:1234/v1/chat/completions"
+                  />
+                </div>
+
+                <div class="setting-group">
+                  <label class="setting-label">Model Name</label>
+                  <input
+                    type="text"
+                    class="setting-input"
+                    id="model-name"
+                    value="local-model"
+                    placeholder="e.g., llama-2-7b, mistral-7b"
+                  />
+                </div>
+              </div>
+
+              <!-- Anthropic Settings -->
+              <div id="anthropic-settings" style="display: none">
+                <div class="setting-group">
+                  <label class="setting-label">API Key</label>
+                  <input
+                    type="password"
+                    class="setting-input"
+                    id="anthropic-api-key"
+                    placeholder="sk-ant-..."
+                  />
+                  <small
+                    style="
+                      font-size: 11px;
+                      color: #6b7280;
+                      margin-top: 4px;
+                      display: block;
+                    "
+                  >
+                    Get your API key from console.anthropic.com
+                  </small>
+                </div>
+
+                <div class="setting-group">
+                  <label class="setting-label">Model</label>
+                  <select class="setting-input" id="anthropic-model">
+                    <option value="claude-3-5-sonnet-20241022">
+                      Claude 3.5 Sonnet (Recommended)
+                    </option>
+                    <option value="claude-3-5-haiku-20241022">
+                      Claude 3.5 Haiku (Fast)
+                    </option>
+                    <option value="claude-3-opus-20240229">
+                      Claude 3 Opus (Most Capable)
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="setting-group">
+                <label class="setting-label">Temperature (0-1)</label>
+                <input
+                  type="number"
+                  class="setting-input"
+                  id="temperature"
+                  value="0.7"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                />
+              </div>
+
+              <div class="setting-group">
+                <label class="setting-label">Max Tokens</label>
+                <input
+                  type="number"
+                  class="setting-input"
+                  id="max-tokens"
+                  value="512"
+                  min="1"
+                  max="4096"
+                />
+              </div>
+
+              <div class="setting-group">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                  "
+                >
+                  <input type="checkbox" id="ad-blocker-toggle" checked />
+                  <span class="setting-label" style="margin: 0"
+                    >Enable Ad Blocker</span
+                  >
+                </label>
+                <small
+                  style="
+                    font-size: 11px;
+                    color: #6b7280;
+                    margin-top: 4px;
+                    display: block;
+                  "
+                >
+                  Blocks common ads and trackers
+                </small>
+              </div>
+
+              <button class="btn btn-primary" id="test-connection-btn">
+                Test Connection
+              </button>
+
+              <div
+                id="connection-status"
+                style="
+                  margin-top: 12px;
+                  padding: 8px;
+                  border-radius: 6px;
+                  font-size: 13px;
+                  display: none;
+                "
+              ></div>
+            </div>
+          </div>
+
+          <!-- Bookmarks Tab -->
+          <div id="bookmarks-tab" class="tab-content" style="display: none">
+            <div id="bookmarks-panel" style="padding: 16px; overflow-y: auto">
+              <h3
+                style="font-size: 16px; font-weight: 600; margin-bottom: 16px"
+              >
+                Bookmarks
+              </h3>
+              <div
+                id="bookmarks-list"
+                style="display: flex; flex-direction: column; gap: 8px"
+              >
+                <p style="color: #6b7280; font-size: 14px">
+                  No bookmarks yet. Click ⭐ Bookmark to save the current page.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tools Tab -->
+          <div id="tools-tab" class="tab-content" style="display: none">
+            <div id="tools-panel">
+              <h3
+                style="font-size: 16px; font-weight: 600; margin-bottom: 16px"
+              >
+                Local Tools
+              </h3>
+
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <button class="btn btn-secondary" id="read-file-btn">
+                  📂 Read File
+                </button>
+                <button class="btn btn-secondary" id="write-file-btn">
+                  💾 Write File
+                </button>
+                <button class="btn btn-secondary" id="execute-script-btn">
+                  ⚡ Execute Script on Page
+                </button>
+              </div>
+
+              <div style="margin-top: 24px">
+                <h4
+                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px"
+                >
+                  Shell Commands
+                </h4>
+                <p style="font-size: 12px; color: #6b7280; margin-bottom: 12px">
+                  Execute shell commands (requires confirmation)
+                </p>
+                <textarea
+                  id="shell-command-input"
+                  rows="3"
+                  class="setting-input"
+                  placeholder="Enter command..."
+                ></textarea>
+                <button
+                  class="btn btn-secondary"
+                  id="execute-command-btn"
+                  style="margin-top: 8px; width: 100%"
+                >
+                  ▶️ Execute Command
+                </button>
+              </div>
+
+              <div id="tool-output" style="margin-top: 16px; display: none">
+                <h4
+                  style="font-size: 14px; font-weight: 600; margin-bottom: 8px"
+                >
+                  Output
+                </h4>
+                <div class="code-block" id="tool-output-content"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="../dist/renderer.js"></script>
+  </body>
+</html>

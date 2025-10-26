@@ -1,0 +1,96 @@
+{
+  "name": "ai-browser",
+  "version": "1.0.0",
+  "description": "AI-powered browser with LM Studio integration, similar to ChatGPT Atlas",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "npm run build && electron .",
+    "build": "tsc",
+    "dev": "tsc && electron . --dev",
+    "watch": "tsc --watch",
+    "clean": "rimraf dist",
+    "package": "npm run build && electron-forge package",
+    "make": "npm run build && electron-forge make",
+    "publish": "npm run build && electron-forge publish",
+    "lint": "echo 'No linting configured yet' && exit 0"
+  },
+  "keywords": [
+    "electron",
+    "browser",
+    "ai",
+    "lm-studio",
+    "chatgpt",
+    "atlas",
+    "local-llm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaduxo/ai-browser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kaduxo/ai-browser/issues"
+  },
+  "homepage": "https://github.com/kaduxo/ai-browser#readme",
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.2.0",
+    "@electron-forge/maker-deb": "^7.2.0",
+    "@electron-forge/maker-rpm": "^7.2.0",
+    "@electron-forge/maker-squirrel": "^7.2.0",
+    "@electron-forge/maker-zip": "^7.2.0",
+    "@types/node": "^20.10.0",
+    "electron": "^38.4.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "abort-controller": "^3.0.0",
+    "electron-squirrel-startup": "^1.0.0"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "name": "AI Browser",
+        "executableName": "ai-browser",
+        "icon": "./assets/icon",
+        "asar": true
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "ai_browser",
+            "setupIcon": "./assets/icon.ico",
+            "loadingGif": "./assets/install.gif"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin",
+            "linux",
+            "win32"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {
+            "options": {
+              "maintainer": "AI Browser Contributors",
+              "homepage": "https://github.com/kaduxo/ai-browser"
+            }
+          }
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {
+            "options": {
+              "homepage": "https://github.com/kaduxo/ai-browser"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

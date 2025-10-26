@@ -1,0 +1,12 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Question or Discussion
+    url: https://github.com/kaduxo/ai-browser/discussions
+    about: Ask questions or discuss ideas with the community
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/kaduxo/ai-browser/security/advisories/new
+    about: Report a security vulnerability privately
+  - name: 📚 Documentation
+    url: https://github.com/kaduxo/ai-browser/blob/main/README.md
+    about: View the project documentation
+

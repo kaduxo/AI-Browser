@@ -1,0 +1,241 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Extract version from tag
+      id: extract_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: AI Browser v${{ steps.extract_version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+        body: |
+          ## AI Browser v${{ steps.extract_version.outputs.VERSION }}
+          
+          ### Downloads
+          
+          - **Windows**: Download `AI-Browser-Setup.exe` for installer or `ai-browser-win32-x64.zip` for portable
+          - **macOS**: Download `ai-browser-darwin-x64.zip`
+          - **Linux**: Download `.deb`, `.rpm`, or `.zip` package
+          
+          ### Installation
+          
+          #### Windows
+          - **Installer**: Run the `.exe` file
+          - **Portable**: Extract `.zip` and run `ai-browser.exe`
+          
+          #### macOS
+          - Extract `.zip` and move `AI Browser.app` to Applications
+          - If you see a security warning, go to System Preferences → Security & Privacy
+          
+          #### Linux
+          - **Debian/Ubuntu**: `sudo dpkg -i ai-browser_*.deb`
+          - **Fedora/RHEL**: `sudo rpm -i ai-browser-*.rpm`
+          - **Portable**: Extract `.zip` and run `./ai-browser`
+          
+          ### Prerequisites
+          
+          - [LM Studio](https://lmstudio.ai) installed and running with a model loaded
+          - LM Studio server started on `http://localhost:1234`
+          
+          ### What's New
+          
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          
+          ### Support
+          
+          - 📖 [Documentation](https://github.com/${{ github.repository }}#readme)
+          - 🐛 [Report Bug](https://github.com/${{ github.repository }}/issues/new?template=bug_report.md)
+          - 💡 [Request Feature](https://github.com/${{ github.repository }}/issues/new?template=feature_request.md)
+
+  build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Package application
+      run: npm run make
+    
+    - name: List build artifacts
+      shell: bash
+      run: |
+        echo "Build artifacts:"
+        find out/make -type f
+    
+    - name: Upload Windows Installer
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./out/make/squirrel.windows/x64/ai-browser-${{ github.ref_name }} Setup.exe
+        asset_name: AI-Browser-Setup.exe
+        asset_content_type: application/octet-stream
+      continue-on-error: true
+    
+    - name: Find and Upload Windows ZIP
+      shell: bash
+      run: |
+        ZIP_FILE=$(find out/make/zip/win32/x64 -name "*.zip" -type f | head -n 1)
+        if [ -f "$ZIP_FILE" ]; then
+          echo "Found ZIP: $ZIP_FILE"
+          gh release upload ${{ github.ref_name }} "$ZIP_FILE" --clobber
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    needs: create-release
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Package application
+      run: npm run make
+    
+    - name: List build artifacts
+      run: |
+        echo "Build artifacts:"
+        find out/make -type f
+    
+    - name: Find and Upload macOS ZIP
+      run: |
+        ZIP_FILE=$(find out/make/zip/darwin/x64 -name "*.zip" -type f | head -n 1)
+        if [ -f "$ZIP_FILE" ]; then
+          echo "Found ZIP: $ZIP_FILE"
+          gh release upload ${{ github.ref_name }} "$ZIP_FILE" --clobber
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Package application
+      run: npm run make
+    
+    - name: List build artifacts
+      run: |
+        echo "Build artifacts:"
+        find out/make -type f
+    
+    - name: Find and Upload DEB package
+      run: |
+        DEB_FILE=$(find out/make/deb/x64 -name "*.deb" -type f | head -n 1)
+        if [ -f "$DEB_FILE" ]; then
+          echo "Found DEB: $DEB_FILE"
+          gh release upload ${{ github.ref_name }} "$DEB_FILE" --clobber
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Find and Upload RPM package
+      run: |
+        RPM_FILE=$(find out/make/rpm/x64 -name "*.rpm" -type f | head -n 1)
+        if [ -f "$RPM_FILE" ]; then
+          echo "Found RPM: $RPM_FILE"
+          gh release upload ${{ github.ref_name }} "$RPM_FILE" --clobber
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Find and Upload Linux ZIP
+      run: |
+        ZIP_FILE=$(find out/make/zip/linux/x64 -name "*.zip" -type f | head -n 1)
+        if [ -f "$ZIP_FILE" ]; then
+          echo "Found ZIP: $ZIP_FILE"
+          gh release upload ${{ github.ref_name }} "$ZIP_FILE" --clobber
+        fi
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  finalize-release:
+    needs: [create-release, build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Check build status
+      run: |
+        echo "Windows: ${{ needs.build-windows.result }}"
+        echo "macOS: ${{ needs.build-macos.result }}"
+        echo "Linux: ${{ needs.build-linux.result }}"
+        
+        if [ "${{ needs.build-windows.result }}" != "success" ] || \
+           [ "${{ needs.build-macos.result }}" != "success" ] || \
+           [ "${{ needs.build-linux.result }}" != "success" ]; then
+          echo "⚠️ Some builds failed, but release was created"
+        else
+          echo "✅ All builds completed successfully"
+        fi
+
