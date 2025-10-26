@@ -54,7 +54,7 @@ A powerful Electron-based desktop browser with integrated AI assistance, Inspire
 - **Node.js** 18+ and npm
 - **LM Studio** running locally (download from [lmstudio.ai](https://lmstudio.ai))
   - Start LM Studio's local server on port 1234
-  - Load your preferred model (e.g., Llama 2, Mistral)
+  - Load your preferred model (e.g., Llama 2, Mistral, deepseekr1 7b)
 
 ## Installation
 
@@ -313,12 +313,12 @@ Modify the prompt templates in `src/renderer.ts`:
 
 ## Roadmap
 
-- [ ] Bookmark management
+- [X] Bookmark management
 - [ ] History tracking
 - [ ] Multiple tabs support
 - [ ] Custom prompt templates
 - [ ] Plugin system for extensions
-- [ ] Dark mode
+- [X] Dark mode
 - [ ] Keyboard shortcuts customization
 - [ ] Export chat history
 - [ ] Cloud LLM support (OpenAI, Anthropic)
@@ -380,10 +380,8 @@ Built with:
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
 - [LM Studio](https://lmstudio.ai/) - Local LLM runtime
 
-Inspired by OpenAI's ChatGPT Atlas concept.
-
 ---
 
-**Note**: This application runs entirely locally and does not send data to external servers (except for web navigation). All AI processing happens through your local LM Studio instance.
+**Note**: This application runs entirely locally and does not send data to external servers (except for web navigation). All AI processing happens through your local LM Studio instance. You can also connect it with your favorite API, i have test it with Anthropic API and it works well.
 
 Kaduxo Built with ❤️ for the AI community
