@@ -1,6 +1,6 @@
 # AI Browser
 
-A powerful Electron-based desktop browser with integrated AI assistance, similar to OpenAI's ChatGPT Atlas. Features context-aware AI chat, page summarization, task automation, and local tool integration via LM Studio.
+A powerful Electron-based desktop browser with integrated AI assistance, Inspired by AI browser innovation. Features context-aware AI chat, page summarization, task automation, and local tool integration via LM Studio. Optional user-configured cloud LLMs.
 
 [![CI/CD](https://github.com/kaduxo/ai-browser/actions/workflows/ci.yml/badge.svg)](https://github.com/kaduxo/ai-browser/actions/workflows/ci.yml)
 [![GitHub release](https://img.shields.io/github/release/kaduxo/ai-browser.svg)](https://github.com/kaduxo/ai-browser/releases/latest)
