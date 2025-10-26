@@ -53,16 +53,13 @@
       "packagerConfig": {
         "name": "AI Browser",
         "executableName": "ai-browser",
-        "icon": "./assets/icon",
         "asar": true
       },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "ai_browser",
-            "setupIcon": "./assets/icon.ico",
-            "loadingGif": "./assets/install.gif"
+            "name": "ai_browser"
           }
         },
         {
